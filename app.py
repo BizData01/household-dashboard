@@ -2,8 +2,6 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-import gspread
-
 st.set_page_config(page_title="가계부 대시보드", page_icon="💰", layout="wide")
 
 SHEET_ID = "1IisJb1FIs32KOAma1T-8L4meWDGiokYv-9fkqRSoW2g"
@@ -11,38 +9,14 @@ SHEET_GID = 1379534029
 
 @st.cache_data(ttl=300)  # 5분마다 자동 갱신
 def load_data():
-    import json, base64
-    raw = base64.b64decode(st.secrets["service_account_b64"].strip())
-    service_account_info = json.loads(raw)
-    # private key 줄바꿈 정규화
-    pk = service_account_info.get("private_key", "")
-    pk = pk.replace("\\n", "\n").replace("\r\n", "\n")
-    service_account_info["private_key"] = pk
-    client = gspread.service_account_from_dict(service_account_info)
-    spreadsheet = client.open_by_key(SHEET_ID)
-
-    # GID로 특정 시트 선택
-    worksheet = None
-    for ws in spreadsheet.worksheets():
-        if ws.id == SHEET_GID:
-            worksheet = ws
-            break
-    if worksheet is None:
-        worksheet = spreadsheet.get_worksheet(0)
-
-    records = worksheet.get_all_records()
-    df = pd.DataFrame(records)
-
-    # 컬럼명 정리 (공백 제거)
+    url = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=csv&gid={SHEET_GID}"
+    df = pd.read_csv(url)
     df.columns = df.columns.str.strip()
-
-    # 타입 변환
     df["날짜"] = pd.to_datetime(df["날짜"], format="%Y.%m.%d")
     df["수입"] = pd.to_numeric(df["수입"], errors="coerce").fillna(0).astype(int)
     df["지출"] = pd.to_numeric(df["지출"], errors="coerce").fillna(0).astype(int)
     df["잔액"] = pd.to_numeric(df["잔액"], errors="coerce").fillna(0).astype(int)
     df["월"] = df["날짜"].dt.to_period("M").astype(str)
-
     return df
 
 
@@ -51,7 +25,7 @@ try:
     df = load_data()
 except Exception as e:
     st.error(f"Google Sheets 연결 실패: {e}")
-    st.info("`.streamlit/secrets.toml` 설정을 확인하세요.")
+    st.info("Google Sheet이 공개(링크가 있는 모든 사용자) 설정인지 확인하세요.")
     st.stop()
 
 # --- Sidebar ---
