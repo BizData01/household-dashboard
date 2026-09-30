@@ -16,8 +16,8 @@ SCOPES = [
 
 @st.cache_data(ttl=300)  # 5분마다 자동 갱신
 def load_data():
-    import json
-    service_account_info = json.loads(st.secrets["service_account_json"])
+    import json, base64
+    service_account_info = json.loads(base64.b64decode(st.secrets["service_account_b64"]))
     creds = Credentials.from_service_account_info(service_account_info, scopes=SCOPES)
     client = gspread.authorize(creds)
     spreadsheet = client.open_by_key(SHEET_ID)
