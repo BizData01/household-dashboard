@@ -3,23 +3,17 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import gspread
-from google.oauth2.service_account import Credentials
 
 st.set_page_config(page_title="가계부 대시보드", page_icon="💰", layout="wide")
 
 SHEET_ID = "1IisJb1FIs32KOAma1T-8L4meWDGiokYv-9fkqRSoW2g"
 SHEET_GID = 1379534029
-SCOPES = [
-    "https://www.googleapis.com/auth/spreadsheets.readonly",
-    "https://www.googleapis.com/auth/drive.readonly",
-]
 
 @st.cache_data(ttl=300)  # 5분마다 자동 갱신
 def load_data():
     import json, base64
     service_account_info = json.loads(base64.b64decode(st.secrets["service_account_b64"]))
-    creds = Credentials.from_service_account_info(service_account_info, scopes=SCOPES)
-    client = gspread.authorize(creds)
+    client = gspread.service_account_from_dict(service_account_info)
     spreadsheet = client.open_by_key(SHEET_ID)
 
     # GID로 특정 시트 선택
