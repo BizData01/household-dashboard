@@ -12,7 +12,12 @@ SHEET_GID = 1379534029
 @st.cache_data(ttl=300)  # 5분마다 자동 갱신
 def load_data():
     import json, base64
-    service_account_info = json.loads(base64.b64decode(st.secrets["service_account_b64"]))
+    raw = base64.b64decode(st.secrets["service_account_b64"].strip())
+    service_account_info = json.loads(raw)
+    # private key 줄바꿈 정규화
+    pk = service_account_info.get("private_key", "")
+    pk = pk.replace("\\n", "\n").replace("\r\n", "\n")
+    service_account_info["private_key"] = pk
     client = gspread.service_account_from_dict(service_account_info)
     spreadsheet = client.open_by_key(SHEET_ID)
 
